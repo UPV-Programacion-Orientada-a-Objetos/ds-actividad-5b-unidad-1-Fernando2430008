@@ -1,6 +1,3 @@
-// todo el codigo esta en un solo archivo para mantenerlo simple
-// comentarios en minusculas y texto sin acentos
-
 #include <iostream>
 
 using namespace std;
@@ -170,7 +167,67 @@ public:
     }
 };
 
-// se removio la clase de matriz estatica para simplificar el programa
+// matriz estatica con tamanos fijos en tiempo de compilacion
+template <typename T, int M, int N>
+class MatrizEstatica : public MatrizBase<T> {
+private:
+    T _datos[M][N];
+
+public:
+    MatrizEstatica() : MatrizBase<T>(M, N) {
+        for (int i = 0; i < M; ++i) {
+            for (int j = 0; j < N; ++j) {
+                _datos[i][j] = T();
+            }
+        }
+    }
+
+    ~MatrizEstatica() {
+        cout << "destruyendo objeto (matriz estatica)" << endl;
+    }
+
+    void cargarValores() override {
+        // ejemplo: pone ceros
+        for (int i = 0; i < M; ++i) {
+            for (int j = 0; j < N; ++j) {
+                _datos[i][j] = T();
+            }
+        }
+    }
+
+    MatrizBase<T>* sumar(const MatrizBase<T>& otra) const override {
+        if (this->_filas != otra.filas() || this->_columnas != otra.columnas()) {
+            cout << "error: dimensiones incompatibles para suma" << endl;
+            return 0;
+        }
+        MatrizEstatica<T, M, N>* res = new MatrizEstatica<T, M, N>();
+        for (int i = 0; i < M; ++i) {
+            for (int j = 0; j < N; ++j) {
+                res->setValor(i, j, this->getValor(i, j) + otra.getValor(i, j));
+            }
+        }
+        return res;
+    }
+
+    void imprimir() const override {
+        for (int i = 0; i < M; ++i) {
+            cout << "| ";
+            for (int j = 0; j < N; ++j) {
+                cout << _datos[i][j];
+                if (j < N - 1) cout << " | ";
+            }
+            cout << " |" << endl;
+        }
+    }
+
+    T getValor(int i, int j) const override {
+        return _datos[i][j];
+    }
+
+    void setValor(int i, int j, const T& v) override {
+        _datos[i][j] = v;
+    }
+};
 
 int main() {
     // demostracion polimorfica con tipo float
@@ -178,9 +235,6 @@ int main() {
     cout << endl;
     cout << ">> demostracion de genericidad (tipo float) <<" << endl;
     cout << endl;
-    // forzar formato fijo con una decimal para floats
-    cout.setf(ios::fixed);
-    cout.precision(1);
 
     cout << "creando matriz dinamica a (3x2)..." << endl;
     MatrizBase<float>* A = new MatrizDinamica<float>(3, 2);
@@ -192,8 +246,8 @@ int main() {
     A->imprimir();
     cout << endl;
 
-    cout << "creando matriz dinamica b (3x2)..." << endl;
-    MatrizBase<float>* B = new MatrizDinamica<float>(3, 2);
+    cout << "creando matriz estatica b (3x2)..." << endl;
+    MatrizBase<float>* B = new MatrizEstatica<float, 3, 2>();
     B->setValor(0, 0, 0.5f); B->setValor(0, 1, 1.0f);
     B->setValor(1, 0, 2.0f); B->setValor(1, 1, 3.0f);
     B->setValor(2, 0, 1.0f); B->setValor(2, 1, 1.0f);
@@ -202,12 +256,38 @@ int main() {
     cout << endl;
 
     cout << "sumando: matriz c = a + b ..." << endl;
-    cout << "(la suma es manejada por el metodo virtual)" << endl;
+    cout << "(la suma es manejada por el metodo virtual de matriz dinamica si a es dinamica)" << endl;
     MatrizBase<float>* C = (*A) + (*B);
     cout << endl;
     if (C != 0) {
         cout << "matriz resultado c (3x2, tipo float):" << endl;
         C->imprimir();
+    }
+    cout << endl;
+
+    cout << ">> demostracion de genericidad (tipo int) <<" << endl;
+    cout << endl;
+    cout << "creando matriz dinamica a2 (2x2)..." << endl;
+    MatrizBase<int>* A2 = new MatrizDinamica<int>(2, 2);
+    A2->setValor(0, 0, 1); A2->setValor(0, 1, 2);
+    A2->setValor(1, 0, 3); A2->setValor(1, 1, 4);
+    cout << "a2 =" << endl;
+    A2->imprimir();
+    cout << endl;
+
+    cout << "creando matriz estatica b2 (2x2)..." << endl;
+    MatrizBase<int>* B2 = new MatrizEstatica<int, 2, 2>();
+    B2->setValor(0, 0, 5); B2->setValor(0, 1, 6);
+    B2->setValor(1, 0, 7); B2->setValor(1, 1, 8);
+    cout << "b2 =" << endl;
+    B2->imprimir();
+    cout << endl;
+
+    cout << "sumando: matriz c2 = a2 + b2 ..." << endl;
+    MatrizBase<int>* C2 = (*A2) + (*B2);
+    if (C2 != 0) {
+        cout << "matriz resultado c2 (2x2, tipo int):" << endl;
+        C2->imprimir();
     }
     cout << endl;
 
@@ -219,6 +299,12 @@ int main() {
     delete A; A = 0;
     cout << "eliminando b..." << endl;
     delete B; B = 0;
+    cout << "eliminando c2..." << endl;
+    delete C2; C2 = 0;
+    cout << "eliminando a2..." << endl;
+    delete A2; A2 = 0;
+    cout << "eliminando b2..." << endl;
+    delete B2; B2 = 0;
     cout << "sistema cerrado." << endl;
 
     return 0;
